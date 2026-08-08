@@ -1,0 +1,61 @@
+{
+  "name": "cleanmac",
+  "version": "1.0.0",
+  "description": "Open source storage and performance cleaner for macOS",
+  "main": "./out/main/index.mjs",
+  "type": "module",
+  "author": "dazza-dev",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "build": "npm run typecheck && electron-vite build",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
+    "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "pack:mac": "npm run icon && npm run build && electron-builder --mac --arm64",
+    "icon": "node build/make-icon.mjs",
+    "test:trash": "esbuild tests/integration/trash.ts --bundle --platform=node --format=esm --external:electron --external:node:* --outfile=out/test-trash.mjs && electron out/test-trash.mjs",
+    "install:local": "npm run icon && npm run build && electron-builder --mac --arm64 --dir --publish never && rm -rf /Applications/CleanMac.app && ditto dist/mac-arm64/CleanMac.app /Applications/CleanMac.app && echo \"Installed to /Applications/CleanMac.app \u2014 re-grant Full Disk Access, the ad-hoc signature changed.\""
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9",
+    "vue-i18n": "^11.4.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^24.13.3",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-vue": "^10.10.0",
+    "globals": "^17.9.0",
+    "lucide-vue-next": "^1.0.0",
+    "pinia": "^4.0.2",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.66.0",
+    "vite": "^7.0.0",
+    "vitest": "^3.0.0",
+    "vue": "^3.5.41",
+    "vue-eslint-parser": "^10.4.1",
+    "vue-router": "^4.4.0",
+    "vue-tsc": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dazza-dev/cleanmac.git"
+  },
+  "homepage": "https://github.com/dazza-dev/cleanmac",
+  "bugs": {
+    "url": "https://github.com/dazza-dev/cleanmac/issues"
+  }
+}

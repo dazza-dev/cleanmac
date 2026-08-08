@@ -1,0 +1,104 @@
+name: Release
+
+# Builds a DMG and publishes a GitHub Release when a version tag is pushed:
+#
+#   npm version 1.1.0        # bumps package.json, commits, and tags v1.1.0
+#   git push --follow-tags   # pushes the commit and the tag; this runs
+#
+# The tag is what triggers it. Pushing to main on its own does not build
+# anything — a release per commit would be noise, and a version number that
+# moves without anyone deciding it should is worse than no version number.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+
+      # The safety suite gates every release. It walks a real filesystem, so it
+      # has to run on macOS.
+      - run: npm test
+
+      # The one test that actually deletes something. It needs a live Electron
+      # process for shell.trashItem, so it cannot run under vitest — and a
+      # release whose deletions cannot be undone is not one worth shipping.
+      - run: npm run test:trash
+
+  build:
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run icon
+      - run: npm run build
+
+      - name: Package
+        run: npx electron-builder --mac --arm64 --publish never
+        env:
+          # There is no Developer ID for this project, so the build is
+          # deliberately unsigned rather than half-signed. Without this,
+          # electron-builder hunts for a certificate in the runner's keychain
+          # and fails on a machine that has none.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.dmg
+            dist/*.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          # Says the awkward thing on the release page itself, where someone
+          # about to download it will read it.
+          body: |
+            ## Unsigned build
+
+            This DMG is **not signed or notarized**. macOS will refuse to open
+            it on first launch with "CleanMac is damaged" or "cannot be opened
+            because the developer cannot be verified". It is neither damaged nor
+            malicious — it simply has no Developer ID certificate, which costs
+            99 USD/year and this project does not have.
+
+            To open it anyway: **right-click the app → Open**, then confirm.
+            You only need to do this once.
+
+            Building from source avoids the warning entirely and is the
+            supported path:
+
+            ```bash
+            git clone https://github.com/dazza-dev/cleanmac.git
+            cd cleanmac && npm install && npm run install:local
+            ```
+
+            ## Full Disk Access
+
+            Grant it in System Settings → Privacy & Security → Full Disk Access.
+            Without it the app still works, but it cannot see inside other
+            applications' containers, and every refusal costs time — scanning is
+            measurably slower.
+
+            An unsigned app gets a new identity on every build, so if you
+            replace this version with another, remove the old entry with **−**
+            and add the new one. Toggling it off and on does not refresh it.

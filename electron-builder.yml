@@ -1,0 +1,57 @@
+appId: dev.dazza.cleanmac
+productName: CleanMac
+copyright: Copyright © 2026 dazza-dev
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+
+afterPack: build/afterPack.cjs
+
+mac:
+  icon: build/icon.icns
+  category: public.app-category.utilities
+  # arm64 only for now. Adding x64 is one line here, but the audience for a
+  # storage cleaner on an Intel Mac is small enough that it is not worth
+  # doubling DMG size and CI time until someone asks.
+  target:
+    - target: dmg
+      arch: [arm64]
+    - target: zip
+      arch: [arm64]
+  # The App Sandbox is deliberately off: sandboxed apps cannot read other
+  # applications' libraries, which is the entire job. That also rules out Mac
+  # App Store distribution — see docs/04-seguridad.md.
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSDesktopFolderUsageDescription: CleanMac never scans your Desktop.
+    NSDocumentsFolderUsageDescription: CleanMac never scans your Documents.
+    NSDownloadsFolderUsageDescription: CleanMac never scans your Downloads.
+    LSApplicationCategoryType: public.app-category.utilities
+    # Declares the languages the app ships. Note this does NOT localise
+    # Electron's built-in menu roles — Electron supplies its own English
+    # strings for those. Their titles are overridden in src/main/menu.ts.
+    CFBundleLocalizations:
+      - en
+      - es
+      - pt
+      - fr
+    CFBundleDevelopmentRegion: en
+
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+# electron-updater reads this to find releases. Signed builds only — an
+# unsigned app cannot verify what it downloads.
+publish:
+  provider: github
+  owner: dazza-dev
+  repo: clean-mac

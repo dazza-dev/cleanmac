@@ -1,0 +1,26 @@
+# Dependencies and build output
+node_modules/
+out/
+dist/
+dist-test/
+.vite/
+coverage/
+
+# Generated from build/make-icon.mjs — the script is the source of truth, so the
+# icon is reviewable as a diff instead of an opaque binary blob.
+build/icon.icns
+build/icon.png
+build/icon.iconset/
+
+# Local tooling and editor state
+.claude/
+.vscode/
+.idea/
+
+# Design notes and references live outside this repository
+docs/
+*.avif
+
+# macOS
+.DS_Store
+*.log
